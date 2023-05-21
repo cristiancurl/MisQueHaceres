@@ -44,8 +44,8 @@
         <scene sceneID="Y24-6x-neS">
             <objects>
                 <navigationController id="XkI-vw-Ad3" sceneMemberID="viewController">
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" largeTitles="YES" id="dfw-Pz-U8e">
-                        <rect key="frame" x="0.0" y="59" width="393" height="96"/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="dfw-Pz-U8e">
+                        <rect key="frame" x="0.0" y="59" width="393" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <textAttributes key="titleTextAttributes">
                             <color key="textColor" red="0.1099694108" green="1" blue="0.04795891486" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>

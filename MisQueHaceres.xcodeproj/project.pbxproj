@@ -19,6 +19,7 @@
 		54CA34242A0B3F42003E794C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 54CA34232A0B3F42003E794C /* Assets.xcassets */; };
 		54CA34272A0B3F42003E794C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 54CA34252A0B3F42003E794C /* LaunchScreen.storyboard */; };
 		54DC21ED2A100A69008F5C49 /* BasicAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54DC21EC2A100A69008F5C49 /* BasicAlert.swift */; };
+		54DC21F02A149772008F5C49 /* BackgroundEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54DC21EF2A149772008F5C49 /* BackgroundEmptyState.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +35,7 @@
 		54CA34262A0B3F42003E794C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		54CA34282A0B3F42003E794C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		54DC21EC2A100A69008F5C49 /* BasicAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicAlert.swift; sourceTree = "<group>"; };
+		54DC21EF2A149772008F5C49 /* BackgroundEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundEmptyState.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +104,7 @@
 		54CA34192A0B3F41003E794C /* MisQueHaceres */ = {
 			isa = PBXGroup;
 			children = (
+				54DC21EE2A1496C0008F5C49 /* UI */,
 				5447CCBD2A0C8F1500C50EF5 /* ViewModel */,
 				5447CCB92A0C8EDF00C50EF5 /* Models */,
 				5447CCB32A0B4FFD00C50EF5 /* Controllers */,
@@ -121,6 +124,14 @@
 				54DC21EC2A100A69008F5C49 /* BasicAlert.swift */,
 			);
 			path = BasicAlert;
+			sourceTree = "<group>";
+		};
+		54DC21EE2A1496C0008F5C49 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				54DC21EF2A149772008F5C49 /* BackgroundEmptyState.swift */,
+			);
+			path = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -206,6 +217,7 @@
 				54CA341B2A0B3F41003E794C /* AppDelegate.swift in Sources */,
 				54CA341D2A0B3F41003E794C /* SceneDelegate.swift in Sources */,
 				54DC21ED2A100A69008F5C49 /* BasicAlert.swift in Sources */,
+				54DC21F02A149772008F5C49 /* BackgroundEmptyState.swift in Sources */,
 				5447CCBC2A0C8F0300C50EF5 /* Group.swift in Sources */,
 				5447CCB12A0B4D2100C50EF5 /* MainListViewController.swift in Sources */,
 			);

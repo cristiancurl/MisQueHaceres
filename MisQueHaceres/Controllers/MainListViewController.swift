@@ -10,15 +10,35 @@ import UIKit
 class MainListViewController: UITableViewController {
     
     let mainListViewModel = MainListViewModel()
+    
+    // UI Element
+    private var emptyStateView: EmptyStateView!
 
     // MARK: Life Cicle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         // Background title
         self.tableView.backgroundView?.backgroundColor = .black
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.green]
         
         // Refresh Control
+        self.setRefreshControl()
+        
+        // Empty state
+        self.setEmptyState()
+        tableView.delegate = self
+    }
+    
+    // MARK: UI
+    
+    // Logo empty state
+    private func setEmptyState() {
+        emptyStateView = EmptyStateView(frame: tableView.bounds)
+        self.tableView.backgroundView = emptyStateView
+    }
+    
+    private func setRefreshControl() {
         let refreshControl = UIRefreshControl()
         tableView.refreshControl = refreshControl
         refreshControl.addTarget(self, action: #selector(handleRefresh(_:)), for: .valueChanged)
@@ -45,6 +65,15 @@ class MainListViewController: UITableViewController {
     
     // MARK: TABLE DELEGATES
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        
+        // Showing background
+        let groups = mainListViewModel.getNamesOfGroup()
+        if groups.count > 0 {
+            self.tableView.backgroundView?.isHidden = true
+        } else {
+            self.tableView.backgroundView?.isHidden = false
+        }
+        
         return mainListViewModel.getNamesOfGroup().count
     }
     
@@ -84,6 +113,25 @@ class MainListViewController: UITableViewController {
         let configuration = UISwipeActionsConfiguration(actions: [swipeAction])
         return configuration
     }
+    
+    // Scroll
+    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        // 1
+//        print(scrollView.contentOffset.y * -1)
+//        let y = scrollView.contentOffset.y * -1
+//        self.tableView.backgroundView?.frame = CGRect(x: self.view.frame.width / 2, y: y, width: 135, height: 180)
+//        self.tableView.reloadData()
+        // 2
+//        let offsetY = scrollView.contentOffset.y
+//
+//        // Mover la imagen de fondo según la posición del scroll
+//        if let backgroundView = tableView.backgroundView {
+//            backgroundView.frame.origin.y = -offsetY / 2
+//        }
+        
+        // 3
+        let offsetY = scrollView.contentOffset.y
+        emptyStateView.transform = CGAffineTransform(translationX: 0, y: offsetY / 2)
+    }
 }
-
 
