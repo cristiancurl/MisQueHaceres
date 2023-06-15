@@ -114,21 +114,28 @@ class MainListViewController: UITableViewController {
         return configuration
     }
     
+    override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        
+        let swipeAction = UIContextualAction(style: .normal, title: "Editar") { [weak self] (action, view, completionHandler) in
+            
+            guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
+            let oldName = groups[indexPath.row]
+            
+            let basicAlert = BasicAlert().Showalert(title: "Editar nombre", placeHolder: "Nombre") { newName in
+                self?.mainListViewModel.updateGroupName(oldName: oldName, newName: newName)
+                self?.tableView.reloadData()
+            }
+            self?.present(basicAlert, animated: true, completion: nil)
+        }
+        
+        swipeAction.backgroundColor = .green
+        
+        let configuration = UISwipeActionsConfiguration(actions: [swipeAction])
+        return configuration
+    }
+    
     // Scroll
     override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        // 1
-//        print(scrollView.contentOffset.y * -1)
-//        let y = scrollView.contentOffset.y * -1
-//        self.tableView.backgroundView?.frame = CGRect(x: self.view.frame.width / 2, y: y, width: 135, height: 180)
-//        self.tableView.reloadData()
-        // 2
-//        let offsetY = scrollView.contentOffset.y
-//
-//        // Mover la imagen de fondo según la posición del scroll
-//        if let backgroundView = tableView.backgroundView {
-//            backgroundView.frame.origin.y = -offsetY / 2
-//        }
-        
         // 3
         let offsetY = scrollView.contentOffset.y
         emptyStateView.transform = CGAffineTransform(translationX: 0, y: offsetY / 2)
