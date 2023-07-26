@@ -9,5 +9,6 @@ import Foundation
 import RealmSwift
 
 class Group: Object {
+    @Persisted var id: String
     @Persisted var name = ""
 }

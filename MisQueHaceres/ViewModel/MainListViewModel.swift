@@ -10,6 +10,20 @@ import RealmSwift
 
 struct MainListViewModel {
     
+    func deleteAllObjects<T: Object>(_ objectType: T.Type) {
+        do {
+            var realm = try Realm()
+            
+            let objects = realm.objects(objectType)
+            try! realm.write {
+                realm.delete(objects)
+            }
+        } catch let error {
+            print("system can not delete \(error)")
+        }
+    }
+
+    
     /// New name of group saving on Realm
     func saveGroup(name: String) {
         do {
@@ -17,6 +31,7 @@ struct MainListViewModel {
             let realm = try! Realm()
             let group = Group()
             group.name = name
+            group.id = UUID().uuidString
             
             // Save
             try! realm.write {
@@ -28,14 +43,14 @@ struct MainListViewModel {
     }
     
     /// Return an Array of objects saved on Realm
-    func getNamesOfGroup() -> [String] {
+    func getNamesOfGroup() -> [Group] {
         do {
             let realm = try! Realm()
             let groups = realm.objects(Group.self)
-            var names: [String] = []
+            var names: [Group] = []
             
             for group in groups {
-                names.append(group.name)
+                names.append(group)
             }
             return names
         } catch {
@@ -45,11 +60,11 @@ struct MainListViewModel {
     }
     
     /// Update a specific Group by name
-    func updateGroupName(oldName: String, newName: String) {
+    func updateGroupName(oldGroup: Group, newName: String) {
         do {
             // Obtaining Object to update
             let realm = try! Realm()
-            let person = realm.objects(Group.self).filter("name == %@", oldName).first
+            let person = realm.objects(Group.self).filter("id == %@", oldGroup.id).first
             
             // Update
             try! realm.write {

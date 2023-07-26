@@ -28,6 +28,7 @@ class MainListViewController: UITableViewController {
         // Empty state
         self.setEmptyState()
         tableView.delegate = self
+//        mainListViewModel.deleteAllObjects(Group.self)
     }
     
     // MARK: UI
@@ -63,7 +64,7 @@ class MainListViewController: UITableViewController {
     }
     
     
-    // MARK: TABLE DELEGATES
+    // MARK: - TABLE DELEGATES
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         // Showing background
@@ -81,7 +82,7 @@ class MainListViewController: UITableViewController {
         
         //title row string
         let groupNames = mainListViewModel.getNamesOfGroup()
-        let name = groupNames[indexPath.row]
+        let name = groupNames[indexPath.row].name
         
         // Table View Cell
         let cell = UITableViewCell()
@@ -96,6 +97,7 @@ class MainListViewController: UITableViewController {
         40
     }
     
+    // Trailing a la derecha eliminar
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
         // How to separate contextual action
@@ -103,7 +105,7 @@ class MainListViewController: UITableViewController {
             
             // Getting group to delete
             guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
-            let groupName = groups[indexPath.row]
+            let groupName = groups[indexPath.row].name
             self?.mainListViewModel.deleteGroupByName(groupName: groupName)
             self?.tableView.reloadData()
             // Done
@@ -114,15 +116,16 @@ class MainListViewController: UITableViewController {
         return configuration
     }
     
+    // leading editar
     override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         
         let swipeAction = UIContextualAction(style: .normal, title: "Editar") { [weak self] (action, view, completionHandler) in
             
             guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
-            let oldName = groups[indexPath.row]
+            let oldGroup = groups[indexPath.row]
             
             let basicAlert = BasicAlert().Showalert(title: "Editar nombre", placeHolder: "Nombre") { newName in
-                self?.mainListViewModel.updateGroupName(oldName: oldName, newName: newName)
+                self?.mainListViewModel.updateGroupName(oldGroup: oldGroup, newName: newName)
                 self?.tableView.reloadData()
             }
             self?.present(basicAlert, animated: true, completion: nil)
