@@ -19,6 +19,7 @@ class MainListViewController: UITableViewController {
         super.viewDidLoad()
         
         // Background title
+        self.tableView.backgroundColor = .black
         self.tableView.backgroundView?.backgroundColor = .black
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.green]
         
@@ -47,20 +48,40 @@ class MainListViewController: UITableViewController {
     
     
     @objc func handleRefresh(_ sender: UIRefreshControl) {
-        
         self.showAlertNewList()
-        self.tableView.refreshControl?.endRefreshing()
+    }
+    
+    
+    /// End refresh control animating
+    private func endRefresh() {
+        if self.tableView.refreshControl?.isRefreshing == true {
+            self.tableView.refreshControl?.endRefreshing()
+        }
     }
     
     /// Show alert controller
     private func showAlertNewList() {
-        
-        let basicAlert = BasicAlert().Showalert(title: "Agregar nombre", placeHolder: "Nombre") { name in
-            self.mainListViewModel.saveGroup(name: name)
+        self.tableView.isScrollEnabled = false
+        let basicAlert = BasicAlerts().showTextFieldAlert(title: "Agregar nombre", placeHolder: "Nombre", onSave: { name in
+            
+            self.mainListViewModel.saveGroup(name: name) { success in
+                if success {
+                    self.tableView.reloadData()
+                }
+                self.tableView.refreshControl?.endRefreshing()
+                self.tableView.isScrollEnabled = true
+            }
+            
+        }, dismiss: {
+            self.tableView.isScrollEnabled = true
             self.tableView.reloadData()
+        })
+        
+        present(basicAlert, animated: true, completion: nil)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.tableView.refreshControl?.endRefreshing()
         }
-        present(basicAlert, animated: true, completion: nil)
     }
     
     
@@ -106,10 +127,25 @@ class MainListViewController: UITableViewController {
             // Getting group to delete
             guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
             let groupName = groups[indexPath.row].name
-            self?.mainListViewModel.deleteGroupByName(groupName: groupName)
-            self?.tableView.reloadData()
-            // Done
-            completionHandler(true)
+            
+            // Alert
+            let alertBeforeDelete = BasicAlerts()
+                .showAcceptAlert(
+                    title: "Eliminar?",
+                    message: "Desea eliminar a : \(groupName)"
+                ) {
+                
+                // Delete on View Model
+                self?.mainListViewModel.deleteGroupByName(groupName: groupName)
+                self?.tableView.reloadData()
+                // Done
+                completionHandler(true)
+                
+            } onCancel: {
+                completionHandler(true)
+            }
+            
+            self?.present(alertBeforeDelete, animated: true)
         }
         
         let configuration = UISwipeActionsConfiguration(actions: [swipeAction])
@@ -124,9 +160,12 @@ class MainListViewController: UITableViewController {
             guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
             let oldGroup = groups[indexPath.row]
             
-            let basicAlert = BasicAlert().Showalert(title: "Editar nombre", placeHolder: "Nombre") { newName in
+            let basicAlert = BasicAlerts().showTextFieldAlert(title: "Editar nombre", placeHolder: "Nombre") { newName in
                 self?.mainListViewModel.updateGroupName(oldGroup: oldGroup, newName: newName)
                 self?.tableView.reloadData()
+                completionHandler(true)
+            } dismiss: {
+                completionHandler(true)
             }
             self?.present(basicAlert, animated: true, completion: nil)
         }
@@ -137,11 +176,18 @@ class MainListViewController: UITableViewController {
         return configuration
     }
     
-    // Scroll
+    //Selection
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let controller = TODOsViewController()
+        self.navigationController?.pushViewController(controller, animated: true)
+    }
+    
+    // MARK: - Scroll
     override func scrollViewDidScroll(_ scrollView: UIScrollView) {
         // 3
         let offsetY = scrollView.contentOffset.y
         emptyStateView.transform = CGAffineTransform(translationX: 0, y: offsetY / 2)
     }
+    
 }
 

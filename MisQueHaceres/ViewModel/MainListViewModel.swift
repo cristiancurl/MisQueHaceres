@@ -25,7 +25,7 @@ struct MainListViewModel {
 
     
     /// New name of group saving on Realm
-    func saveGroup(name: String) {
+    func saveGroup(name: String, completion: @escaping (Bool) -> Void) {
         do {
             // NewObject
             let realm = try! Realm()
@@ -37,8 +37,16 @@ struct MainListViewModel {
             try! realm.write {
                 realm.add(group)
             }
+            
+            DispatchQueue.main.async {
+                completion(true)
+            }
         } catch {
             print("system can not saved")
+            
+            DispatchQueue.main.async {
+                completion(false)
+            }
         }
     }
     
