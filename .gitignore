@@ -1,0 +1,5 @@
+# Ignore xuser data
+*.xcuserstate
+
+# Missing ignore pl list and other file data
+
