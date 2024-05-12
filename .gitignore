@@ -3,3 +3,4 @@
 
 # Missing ignore pl list and other file data
 
+*.DS_Store
