@@ -8,7 +8,9 @@
 import Foundation
 import RealmSwift
 
-class Group: Object {
+class TodoTaskModel: Object {
     @Persisted var id: String
     @Persisted var name = ""
+    @Persisted var especifications = ""
+    @Persisted var date: Date = Date()
 }

@@ -7,8 +7,44 @@
 
 import Foundation
 import RealmSwift
+import UserNotifications
+import UIKit
 
-struct MainListViewModel {
+class MainListViewModel {
+    var todoTasksArray: [TodoTaskModel] = []
+    var realmManager: RealmManager = RealmManager()
+    
+    init() {
+        setTodoTasks()
+    }
+    
+    func loadImage(from url: URL, completion: @escaping (UIImage?) -> Void) {
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            if let data = data, let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    completion(image)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+            }
+        }.resume()
+    }
+    
+    @MainActor // si es para actualizar la UI asi ya no se necesita main.async
+    func loadImageAsync(from url: URL) async throws -> UIImage? {
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            return UIImage(data: data)
+        } catch {
+            throw URLError(.cannotDecodeContentData)
+        }
+    }
+    
+    func chafa(completion: @escaping(Result<String, Error>) -> Void) {
+        
+    }
     
     func deleteAllObjects<T: Object>(_ objectType: T.Type) {
         do {
@@ -22,57 +58,113 @@ struct MainListViewModel {
             print("system can not delete \(error)")
         }
     }
-
     
     /// New name of group saving on Realm
-    func saveGroup(name: String, completion: @escaping (Bool) -> Void) {
-        do {
-            // NewObject
-            let realm = try! Realm()
-            let group = Group()
-            group.name = name
-            group.id = UUID().uuidString
-            
-            // Save
-            try! realm.write {
-                realm.add(group)
+    func handleSaveTask(todoTask: TodoTaskModel, completion: @escaping (Bool) -> Void) {
+        
+        let center = UNUserNotificationCenter.current()
+        
+        center.getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional:
+                self.addNotificationRequest(todoTask: todoTask) { quePaso in
+                    if quePaso {
+                        completion(true)
+                    } else {
+                        completion(false)
+                    }
+                }
+            case .notDetermined, .denied:
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                    if granted {
+                        self.addNotificationRequest(todoTask: todoTask) { quePaso in
+                            if quePaso {
+                                completion(true)
+                            } else {
+                                completion(false)
+                            }
+                        }
+                    } else {
+                        // manejar rechazo (mostrar alerta, guardar estado, etc.)
+                        print("se nego todo")
+                        completion(false)
+                    }
+                }
+            default:
+                break
             }
-            
-            DispatchQueue.main.async {
-                completion(true)
+        }
+        
+    }
+    
+    
+    func handleSaveTaskAsync(todoTask: TodoTaskModel) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            handleSaveTask(todoTask: todoTask) { quePacho in
+                if quePacho {
+                    continuation.resume(returning: true)
+                } else {
+                    continuation.resume(returning: false)
+                }
             }
-        } catch {
-            print("system can not saved")
-            
-            DispatchQueue.main.async {
+        }
+    }
+    
+    func saveTask(for todoTask: TodoTaskModel, completion: @escaping (Bool) -> Void) {
+        DispatchQueue.main.async {
+            self.realmManager.saveTask(newTodoTask: todoTask) { quePaso in
+                self.setTodoTasks()
+                if quePaso {
+                    completion(true)
+                } else {
+                    // se me apago
+                    print("error en el saveVIewModel")
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    private func addNotificationRequest(todoTask: TodoTaskModel, completion: @escaping (Bool) -> Void) {
+        let content = UNMutableNotificationContent()
+        content.title = todoTask.name
+        content.body = todoTask.especifications
+        content.sound = UNNotificationSound.default
+        
+        // Usar DateComponents para programar en fecha específica (comportamiento de calendario)
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todoTask.date)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+
+        let request = UNNotificationRequest(identifier: todoTask.id, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let err = error {
+                print("Error scheduling notification:", err)
                 completion(false)
+            } else {
+                print("Scheduled notification with id:", todoTask.id)
+                self.saveTask(for: todoTask) { quePaso in
+                    if quePaso {
+                        completion(true)
+                    } else {
+                        completion(false)
+                    }
+                }
+                
             }
         }
     }
     
     /// Return an Array of objects saved on Realm
-    func getNamesOfGroup() -> [Group] {
-        do {
-            let realm = try! Realm()
-            let groups = realm.objects(Group.self)
-            var names: [Group] = []
-            
-            for group in groups {
-                names.append(group)
-            }
-            return names
-        } catch {
-            print("names were not get, error system")
-            return []
-        }
+    func setTodoTasks() {
+        self.todoTasksArray = realmManager.getTodoTasks()
     }
     
     /// Update a specific Group by name
-    func updateGroupName(oldGroup: Group, newName: String) {
+    func updateGroupName(oldGroup: TodoTaskModel, newName: String) {
         do {
             // Obtaining Object to update
             let realm = try! Realm()
-            let person = realm.objects(Group.self).filter("id == %@", oldGroup.id).first
+            let person = realm.objects(TodoTaskModel.self).filter("id == %@", oldGroup.id).first
             
             // Update
             try! realm.write {
@@ -84,17 +176,11 @@ struct MainListViewModel {
     }
     
     /// Deleting a Group by name from Realm
-    func deleteGroupByName(groupName: String) {
-        // Obtaining Objetc to delete
-        let realm = try! Realm()
-        let group = realm.objects(Group.self).filter("name == %@", groupName).first
-        
-        // Delete
-        if let group = group {
-            try! realm.write {
-                realm.delete(group)
-            }
-        }
+    func deleteTodoTask(todoTask: TodoTaskModel) {
+        self.realmManager.deleteTodoTask(todoTask: todoTask)
+        self.setTodoTasks()
     }
     
 }
+
+

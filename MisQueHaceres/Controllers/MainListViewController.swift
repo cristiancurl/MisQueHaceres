@@ -7,115 +7,82 @@
 
 import UIKit
 
-class MainListViewController: UITableViewController {
-    
+class MainListViewController: UITableViewController, newTODODelegate {
     let mainListViewModel = MainListViewModel()
     
     // UI Element
-    private var emptyStateView: EmptyStateView!
-
+    // TODO: Cosas para agregar:
+    // descripcion al model de tarea.. cosa mas dificil ✅
+    
+    // ver la funcionaldiad del reloj
+    // ver lo de las multilineas en las celdas
+    // agregar animacion a las celdas importantes.
+    //      se puede agregar un checkbox de cosas importantes y buscar diseño para recalcar
+    // crearle diseño fresa a la app
+    // arreglar el asunto con GIT por que tengo dos cuentas y este proyecto esta en CURL
+    
     // MARK: Life Cicle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        // Background title
-        self.tableView.backgroundColor = .black
-        self.tableView.backgroundView?.backgroundColor = .black
-        self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.green]
-        
-        // Refresh Control
-        self.setRefreshControl()
-        
-        // Empty state
-        self.setEmptyState()
+        self.tableView.separatorStyle = .none
+        self.setButtonAdd()
         tableView.delegate = self
-//        mainListViewModel.deleteAllObjects(Group.self)
     }
     
     // MARK: UI
-    
-    // Logo empty state
-    private func setEmptyState() {
-        emptyStateView = EmptyStateView(frame: tableView.bounds)
-        self.tableView.backgroundView = emptyStateView
+    private func setButtonAdd() {
+        let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(goToAddNew))
+        self.navigationItem.rightBarButtonItem = addButton
     }
     
-    private func setRefreshControl() {
-        let refreshControl = UIRefreshControl()
-        tableView.refreshControl = refreshControl
-        refreshControl.addTarget(self, action: #selector(handleRefresh(_:)), for: .valueChanged)
-    }
-    
-    
-    @objc func handleRefresh(_ sender: UIRefreshControl) {
-        self.showAlertNewList()
-    }
-    
-    
-    /// End refresh control animating
-    private func endRefresh() {
-        if self.tableView.refreshControl?.isRefreshing == true {
-            self.tableView.refreshControl?.endRefreshing()
+    // Add new TODO button
+    @objc func goToAddNew() {
+        // controlador extra para crear tarea
+        let newTodoview = NewTODOViewController()
+        newTodoview.delegate = self
+        
+        if let sheet = newTodoview.sheetPresentationController {
+            // agregando propiedades de presentation a newTODOController
+            sheet.detents = [.medium()]
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 20
         }
+        
+        present(newTodoview, animated: true)
     }
     
-    /// Show alert controller
-    private func showAlertNewList() {
-        self.tableView.isScrollEnabled = false
-        let basicAlert = BasicAlerts().showTextFieldAlert(title: "Agregar nombre", placeHolder: "Nombre", onSave: { name in
-            
-            self.mainListViewModel.saveGroup(name: name) { success in
-                if success {
-                    self.tableView.reloadData()
-                }
+    // MARK: - Delegete New
+    
+    /// Llamado del delegado de la ventana newTODO
+    func newTodo(newTodoTask: TodoTaskModel) {
+//        self.mainListViewModel.handleSaveTask(todoTask: newTodoTask) { _ in
+//            
+//        }
+        Task {
+            try await self.mainListViewModel.handleSaveTaskAsync(todoTask: newTodoTask)
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
                 self.tableView.refreshControl?.endRefreshing()
                 self.tableView.isScrollEnabled = true
             }
-            
-        }, dismiss: {
-            self.tableView.isScrollEnabled = true
-            self.tableView.reloadData()
-        })
-        
-        present(basicAlert, animated: true, completion: nil)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.tableView.refreshControl?.endRefreshing()
         }
+        
+        dismiss(animated: true)
     }
-    
     
     // MARK: - TABLE DELEGATES
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        
-        // Showing background
-        let groups = mainListViewModel.getNamesOfGroup()
-        if groups.count > 0 {
-            self.tableView.backgroundView?.isHidden = true
-        } else {
-            self.tableView.backgroundView?.isHidden = false
-        }
-        
-        return mainListViewModel.getNamesOfGroup().count
+        mainListViewModel.todoTasksArray.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        //title row string
-        let groupNames = mainListViewModel.getNamesOfGroup()
-        let name = groupNames[indexPath.row].name
-        
         // Table View Cell
         let cell = UITableViewCell()
-        cell.contentView.backgroundColor = .black
-        cell.textLabel?.text = name
+        cell.textLabel?.text = mainListViewModel.todoTasksArray[indexPath.row].name
         cell.textLabel?.font = UIFont(name: "Helvetica", size: 20)
-        cell.textLabel?.textColor = .green
+        cell.textLabel?.numberOfLines = 2
         return cell
-    }
-
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        40
     }
     
     // Trailing a la derecha eliminar
@@ -125,18 +92,17 @@ class MainListViewController: UITableViewController {
         let swipeAction = UIContextualAction(style: .destructive, title: "Eliminar") { [weak self] (action, view, completionHandler) in
             
             // Getting group to delete
-            guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
-            let groupName = groups[indexPath.row].name
+            guard let todoTask = self?.mainListViewModel.todoTasksArray[indexPath.row] else { return }
             
             // Alert
             let alertBeforeDelete = BasicAlerts()
                 .showAcceptAlert(
                     title: "Eliminar?",
-                    message: "Desea eliminar a : \(groupName)"
+                    message: "Desea eliminar a : \(todoTask.name)"
                 ) {
                 
                 // Delete on View Model
-                self?.mainListViewModel.deleteGroupByName(groupName: groupName)
+                self?.mainListViewModel.deleteTodoTask(todoTask: todoTask)
                 self?.tableView.reloadData()
                 // Done
                 completionHandler(true)
@@ -157,9 +123,9 @@ class MainListViewController: UITableViewController {
         
         let swipeAction = UIContextualAction(style: .normal, title: "Editar") { [weak self] (action, view, completionHandler) in
             
-            guard let groups = self?.mainListViewModel.getNamesOfGroup() else { return }
+            guard let groups = self?.mainListViewModel.todoTasksArray else { return }
             let oldGroup = groups[indexPath.row]
-            
+            // cambiar de alerta a view controller
             let basicAlert = BasicAlerts().showTextFieldAlert(title: "Editar nombre", placeHolder: "Nombre") { newName in
                 self?.mainListViewModel.updateGroupName(oldGroup: oldGroup, newName: newName)
                 self?.tableView.reloadData()
@@ -171,23 +137,14 @@ class MainListViewController: UITableViewController {
         }
         
         swipeAction.backgroundColor = .green
-        
         let configuration = UISwipeActionsConfiguration(actions: [swipeAction])
         return configuration
     }
     
     //Selection
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let controller = TODOsViewController()
+        let controller = TODOViewController(todoTask: mainListViewModel.todoTasksArray[indexPath.row])
         self.navigationController?.pushViewController(controller, animated: true)
     }
-    
-    // MARK: - Scroll
-    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        // 3
-        let offsetY = scrollView.contentOffset.y
-        emptyStateView.transform = CGAffineTransform(translationX: 0, y: offsetY / 2)
-    }
-    
 }
 
