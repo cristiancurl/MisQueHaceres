@@ -55,9 +55,6 @@ class MainListViewController: UITableViewController, newTODODelegate {
     
     /// Llamado del delegado de la ventana newTODO
     func newTodo(newTodoTask: TodoTaskModel) {
-//        self.mainListViewModel.handleSaveTask(todoTask: newTodoTask) { _ in
-//            
-//        }
         Task {
             try await self.mainListViewModel.handleSaveTaskAsync(todoTask: newTodoTask)
             DispatchQueue.main.async {
@@ -76,7 +73,6 @@ class MainListViewController: UITableViewController, newTODODelegate {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
         // Table View Cell
         let cell = UITableViewCell()
         cell.textLabel?.text = mainListViewModel.todoTasksArray[indexPath.row].name
