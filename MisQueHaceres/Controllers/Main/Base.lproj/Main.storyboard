@@ -62,6 +62,7 @@
                         <textAttributes key="largeTitleTextAttributes">
                             <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         </textAttributes>
+                        <navigationBarAppearance key="compactScrollEdgeAppearance"/>
                     </navigationBar>
                     <connections>
                         <segue destination="F81-eO-mea" kind="relationship" relationship="rootViewController" id="pcU-1S-HBd"/>
