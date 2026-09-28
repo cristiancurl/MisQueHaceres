@@ -75,7 +75,10 @@ final class MainListViewController: UITableViewController {
                 placeHolder: task.name,
                 onSave: { newName in
                     let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if trimmed.isEmpty { completion(false); return }
+                    if trimmed.isEmpty {
+                        completion(false)
+                        return
+                    }
                     self.mainListViewModel.updateTodo(task, newName: trimmed)
                     self.tableView.reloadData()
                     completion(true)
@@ -99,15 +102,14 @@ final class MainListViewController: UITableViewController {
 
 extension MainListViewController: NewTODODelegate {
     func newTodo(newTodoTask: TodoTaskModel) {
-        Task {
-            do {
-                try await mainListViewModel.handleSaveTaskAsync(todoTask: newTodoTask)
-                DispatchQueue.main.async {
+        mainListViewModel.saveTask(newTodoTask) { [weak self] success in
+            guard let self else { return }
+
+            DispatchQueue.main.async {
+                if success {
                     self.tableView.reloadData()
-                    self.dismiss(animated: true)
                 }
-            } catch {
-                print("Error saving todo: \(error)")
+                self.dismiss(animated: true)
             }
         }
     }
