@@ -15,7 +15,7 @@ final class RealmManager {
 
     private func configureRealmMigration() {
         var config = Realm.Configuration.defaultConfiguration
-        config.schemaVersion = 1
+        config.schemaVersion = 5
         config.migrationBlock = { migration, oldSchemaVersion in
             if oldSchemaVersion < 1 {
                 migration.enumerateObjects(ofType: TodoTaskModel.className()) { _, newObject in
