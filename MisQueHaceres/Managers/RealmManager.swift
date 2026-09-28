@@ -1,108 +1,68 @@
-//
-//  RealmManager.swift
-//  MisQueHaceres
-//
-//  Created by Cristian Plascencia on 02/02/26.
-//
-
 import Foundation
 import RealmSwift
 
-class RealmManager {
-    private var _realm: Realm?
-    private var realm: Realm {
-        get throws {
-            if let existingRealm = _realm, !existingRealm.isInWriteTransaction {
-                return existingRealm
-            }
-            
-            let newRealm = try Realm()
-            _realm = newRealm
-            return newRealm
-        }
-    }
-    
+final class RealmManager {
+    private let realm: Realm
+
     init() {
-        setupRealm()
-        configureRealmMigration()
-    }
-    
-    private func setupRealm() {
         do {
-            _realm = try Realm()
-            print("✅ RealmDatabaseManager inicializado")
+            self.realm = try Realm()
+            configureRealmMigration()
         } catch {
-            print("❌ Error inicializando Realm: \(error)")
-            // En producción, podrías registrar este error en Crashlytics
+            fatalError("Realm could not be initialized: \(error)")
         }
     }
-    
-    /// Return an Array of objects saved on Realm
-    func getTodoTasks() -> [TodoTaskModel] {
-        do {
-            let realmInstance = try realm
-            let groups = realmInstance.objects(TodoTaskModel.self)
-            var names: [TodoTaskModel] = []
-            
-            for group in groups {
-                names.append(group)
+
+    private func configureRealmMigration() {
+        var config = Realm.Configuration.defaultConfiguration
+        config.schemaVersion = 1
+        config.migrationBlock = { migration, oldSchemaVersion in
+            if oldSchemaVersion < 1 {
+                migration.enumerateObjects(ofType: TodoTaskModel.className()) { _, newObject in
+                    newObject?["name"] = newObject?["name"] ?? ""
+                    newObject?["specifications"] = newObject?["specifications"] ?? ""
+                    newObject?["date"] = newObject?["date"] ?? Date()
+                }
             }
-            return names
-        } catch let error {
-            print("Error al obtener")
-            return []
         }
+        Realm.Configuration.defaultConfiguration = config
     }
-    
-    /// New name of group saving on Realm
-    func saveTask(newTodoTask: TodoTaskModel, completion: @escaping (Bool) -> Void) {
+
+    func getTodoTasks() -> [TodoTaskModel] {
+        Array(realm.objects(TodoTaskModel.self).sorted(byKeyPath: "date", ascending: true))
+    }
+
+    func saveTask(_ task: TodoTaskModel, completion: @escaping (Bool) -> Void) {
         do {
-            let realmInstance = try realm
-            
-            try realmInstance.write {
-                realmInstance.add(newTodoTask)
+            try realm.write {
+                realm.add(task, update: .modified)
             }
             completion(true)
-        } catch let error {
-            print("system can not saved: \(error)")
+        } catch {
+            print("Realm save error: \(error)")
             completion(false)
         }
     }
-    
-    /// Deleting task from realm
-    func deleteTodoTask(todoTask: TodoTaskModel) {
+
+    func updateTask(_ task: TodoTaskModel, newName: String? = nil, newSpecifications: String? = nil, newDate: Date? = nil) {
         do {
-            
-            let realmInstance = try realm
-            if let group = realmInstance.objects(TodoTaskModel.self).filter("id == %@", todoTask.id).first {
-                try realmInstance.write {
-                    realmInstance.delete(group)
-                }
+            try realm.write {
+                if let newName { task.name = newName }
+                if let newSpecifications { task.specifications = newSpecifications }
+                if let newDate { task.date = newDate }
             }
-            
-        } catch let error {
-            
-            print("fallo al borrar")
-            print(error.localizedDescription)
-            
+        } catch {
+            print("Realm update error: \(error)")
         }
     }
-    
-    func configureRealmMigration() {
-        var config = Realm.Configuration()
-        // Incrementa este número cada vez que cambies el esquema
-        config.schemaVersion = 3
 
-        config.migrationBlock = { migration, oldSchemaVersion in
-//            if oldSchemaVersion < 2 {
-                // No es necesario asignar la nueva propiedad si es opcional o tiene valor por defecto.
-                // Si quieres dar un valor por defecto puedes hacerlo aquí:
-                // migration.enumerateObjects(ofType: Group.className()) { oldObject, newObject in
-                //     newObject?["descripcion"] = "valor por defecto"
-                // }
-//            }
+    func deleteTodoTask(_ task: TodoTaskModel) {
+        do {
+            try realm.write {
+                realm.delete(task)
+            }
+        } catch {
+            print("Realm delete error: \(error)")
         }
-
-        Realm.Configuration.defaultConfiguration = config
     }
 }

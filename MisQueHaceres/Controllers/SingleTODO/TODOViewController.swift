@@ -1,18 +1,11 @@
-//
-//  ViewController.swift
-//  MisQueHaceres
-//
-//  Created by Cristian Plascencia on 09/05/23.
-//
-
 import UIKit
 
-class TODOViewController: UIViewController {
-
-    @IBOutlet weak var tienesQueLabel2: UILabel!
+final class TODOViewController: UIViewController {
+    @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
-    @IBOutlet weak var dateTimeLabel: UILabel!
-    var todoTask: TodoTaskModel
+    @IBOutlet weak var dateLabel: UILabel!
+
+    private var todoTask: TodoTaskModel
 
     init(todoTask: TodoTaskModel) {
         self.todoTask = todoTask
@@ -20,29 +13,20 @@ class TODOViewController: UIViewController {
     }
 
     required init?(coder: NSCoder) {
-        self.todoTask = TodoTaskModel()
-        super.init(coder: coder)
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setName()
-        setDate()
+        fatalError("init(coder:) has not been implemented")
     }
 
-    func setName() {
-        guard let label = tienesQueLabel2 else {
-            print("Error: tienesQueLabel es nil")
-            return
-        }
-        label.text = self.todoTask.name
-        descriptionLabel.text = self.todoTask.especifications
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureUI()
     }
-    
-    func setDate() {
-        let dateFormatter = DateFormatter()
-        dateFormatter.timeStyle = .short
-        let date = dateFormatter.string(from: self.todoTask.date)
-        dateTimeLabel.text = date
+
+    private func configureUI() {
+        nameLabel.text = todoTask.name
+        descriptionLabel.text = todoTask.specifications
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        dateLabel.text = formatter.string(from: todoTask.date)
     }
 }
