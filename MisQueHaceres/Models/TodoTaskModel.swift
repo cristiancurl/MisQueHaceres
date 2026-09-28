@@ -1,16 +1,21 @@
-//
-//  Group.swift
-//  MisQueHaceres
-//
-//  Created by Cristian Plascencia on 10/05/23.
-//
-
 import Foundation
 import RealmSwift
 
 class TodoTaskModel: Object {
-    @Persisted var id: String
-    @Persisted var name = ""
-    @Persisted var especifications = ""
+    @Persisted(primaryKey: true) var id: String
+    @Persisted var name: String = ""
+    @Persisted var specifications: String = ""
     @Persisted var date: Date = Date()
+
+    convenience init(name: String, specifications: String, date: Date) {
+        self.init()
+        self.id = UUID().uuidString
+        self.name = name
+        self.specifications = specifications
+        self.date = date
+    }
+
+    override static func ignoredProperties() -> [String] {
+        []
+    }
 }

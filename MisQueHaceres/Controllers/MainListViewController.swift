@@ -1,146 +1,116 @@
-//
-//  MainListViewController.swift
-//  MisQueHaceres
-//
-//  Created by Cristian Plascencia on 09/05/23.
-//
-
 import UIKit
 
-class MainListViewController: UITableViewController, newTODODelegate {
+final class MainListViewController: UITableViewController {
     let mainListViewModel = MainListViewModel()
-    
-    // UI Element
-    // TODO: Cosas para agregar:
-    // descripcion al model de tarea.. cosa mas dificil ✅
-    
-    // ver la funcionaldiad del reloj
-    // ver lo de las multilineas en las celdas
-    // agregar animacion a las celdas importantes.
-    //      se puede agregar un checkbox de cosas importantes y buscar diseño para recalcar
-    // crearle diseño fresa a la app
-    // arreglar el asunto con GIT por que tengo dos cuentas y este proyecto esta en CURL
-    
-    // MARK: Life Cicle
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.tableView.separatorStyle = .none
-        self.setButtonAdd()
-        tableView.delegate = self
-    }
-    
-    // MARK: UI
+
     private func setButtonAdd() {
         let addButton = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(goToAddNew))
-        self.navigationItem.rightBarButtonItem = addButton
+        navigationItem.rightBarButtonItem = addButton
     }
-    
-    // Add new TODO button
-    @objc func goToAddNew() {
-        // controlador extra para crear tarea
-        let newTodoview = NewTODOViewController()
-        newTodoview.delegate = self
-        
-        if let sheet = newTodoview.sheetPresentationController {
-            // agregando propiedades de presentation a newTODOController
+
+    @objc private func goToAddNew() {
+        let newTodoView = NewTODOViewController()
+        newTodoView.delegate = self
+
+        if let sheet = newTodoView.sheetPresentationController {
             sheet.detents = [.medium()]
             sheet.prefersGrabberVisible = true
             sheet.preferredCornerRadius = 20
         }
-        
-        present(newTodoview, animated: true)
+
+        present(newTodoView, animated: true)
     }
-    
-    // MARK: - Delegete New
-    
-    /// Llamado del delegado de la ventana newTODO
-    func newTodo(newTodoTask: TodoTaskModel) {
-        Task {
-            try await self.mainListViewModel.handleSaveTaskAsync(todoTask: newTodoTask)
-            DispatchQueue.main.async {
-                self.tableView.reloadData()
-                self.tableView.refreshControl?.endRefreshing()
-                self.tableView.isScrollEnabled = true
-            }
-        }
-        
-        dismiss(animated: true)
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.separatorStyle = .none
+        setButtonAdd()
     }
-    
-    // MARK: - TABLE DELEGATES
+
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         mainListViewModel.todoTasksArray.count
     }
-    
+
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        // Table View Cell
-        let cell = UITableViewCell()
-        cell.textLabel?.text = mainListViewModel.todoTasksArray[indexPath.row].name
-        cell.textLabel?.font = UIFont(name: "Helvetica", size: 20)
+        let task = mainListViewModel.todoTasksArray[indexPath.row]
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "TaskCell")
+        cell.textLabel?.text = task.name
+        cell.detailTextLabel?.text = task.specifications
         cell.textLabel?.numberOfLines = 2
+        cell.detailTextLabel?.numberOfLines = 2
         return cell
     }
-    
-    // Trailing a la derecha eliminar
+
     override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        
-        // How to separate contextual action
-        let swipeAction = UIContextualAction(style: .destructive, title: "Eliminar") { [weak self] (action, view, completionHandler) in
-            
-            // Getting group to delete
-            guard let todoTask = self?.mainListViewModel.todoTasksArray[indexPath.row] else { return }
-            
-            // Alert
-            let alertBeforeDelete = BasicAlerts()
-                .showAcceptAlert(
-                    title: "Eliminar?",
-                    message: "Desea eliminar a : \(todoTask.name)"
-                ) {
-                
-                // Delete on View Model
-                self?.mainListViewModel.deleteTodoTask(todoTask: todoTask)
-                self?.tableView.reloadData()
-                // Done
-                completionHandler(true)
-                
-            } onCancel: {
-                completionHandler(true)
-            }
-            
-            self?.present(alertBeforeDelete, animated: true)
+        let task = mainListViewModel.todoTasksArray[indexPath.row]
+
+        let deleteAction = UIContextualAction(style: .destructive, title: "Eliminar") { [weak self] _, _, completion in
+            guard let self else { return }
+            let alert = BasicAlerts().showAcceptAlert(
+                title: "Eliminar",
+                message: "¿Deseas eliminar \(task.name)?",
+                onAccept: {
+                    self.mainListViewModel.deleteTodoTask(todoTask: task)
+                    self.tableView.reloadData()
+                    completion(true)
+                },
+                onCancel: {
+                    completion(true)
+                }
+            )
+            self.present(alert, animated: true)
         }
-        
-        let configuration = UISwipeActionsConfiguration(actions: [swipeAction])
-        return configuration
+
+        return UISwipeActionsConfiguration(actions: [deleteAction])
     }
-    
-    // leading editar
+
     override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        
-        let swipeAction = UIContextualAction(style: .normal, title: "Editar") { [weak self] (action, view, completionHandler) in
-            
-            guard let groups = self?.mainListViewModel.todoTasksArray else { return }
-            let oldGroup = groups[indexPath.row]
-            // cambiar de alerta a view controller
-            let basicAlert = BasicAlerts().showTextFieldAlert(title: "Editar nombre", placeHolder: "Nombre") { newName in
-                self?.mainListViewModel.updateGroupName(oldGroup: oldGroup, newName: newName)
-                self?.tableView.reloadData()
-                completionHandler(true)
-            } dismiss: {
-                completionHandler(true)
-            }
-            self?.present(basicAlert, animated: true, completion: nil)
+        let task = mainListViewModel.todoTasksArray[indexPath.row]
+
+        let editAction = UIContextualAction(style: .normal, title: "Editar") { [weak self] _, _, completion in
+            guard let self else { return }
+
+            let alert = BasicAlerts().showTextFieldAlert(
+                title: "Editar tarea",
+                placeHolder: task.name,
+                onSave: { newName in
+                    let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.isEmpty {
+                        completion(false)
+                        return
+                    }
+                    self.mainListViewModel.updateTodo(task, newName: trimmed)
+                    self.tableView.reloadData()
+                    completion(true)
+                },
+                dismiss: { completion(true) }
+            )
+
+            self.present(alert, animated: true)
         }
-        
-        swipeAction.backgroundColor = .green
-        let configuration = UISwipeActionsConfiguration(actions: [swipeAction])
-        return configuration
+
+        editAction.backgroundColor = .systemGreen
+        return UISwipeActionsConfiguration(actions: [editAction])
     }
-    
-    //Selection
+
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let controller = TODOViewController(todoTask: mainListViewModel.todoTasksArray[indexPath.row])
-        self.navigationController?.pushViewController(controller, animated: true)
+        let task = mainListViewModel.todoTasksArray[indexPath.row]
+        let controller = TODOViewController(todoTask: task)
+        navigationController?.pushViewController(controller, animated: true)
     }
 }
 
+extension MainListViewController: NewTODODelegate {
+    func newTodo(newTodoTask: TodoTaskModel) {
+        mainListViewModel.saveTask(newTodoTask) { [weak self] success in
+            guard let self else { return }
+
+            DispatchQueue.main.async {
+                if success {
+                    self.tableView.reloadData()
+                }
+                self.dismiss(animated: true)
+            }
+        }
+    }
+}
